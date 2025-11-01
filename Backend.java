@@ -28,3 +28,11 @@ public class Backend {
     public void addData(String item) {
         data.add(item);
     }
+
+    public void removeData(String item) {
+        data.remove(item);
+    }
+
+    public int getDataCount() {
+        return data.size();
+    }
