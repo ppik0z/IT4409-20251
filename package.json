@@ -9,6 +9,11 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@clerk/localizations": "^3.28.1",
+    "@clerk/nextjs": "^6.35.2",
+    "@prisma/client": "^6.19.0",
+    "axios": "^1.13.2",
+    "mongodb": "^6.21.0",
     "next": "16.0.3",
     "react": "19.2.0",
     "react-dom": "19.2.0"
@@ -20,6 +25,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
+    "prisma": "^6.19.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
