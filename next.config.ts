@@ -1,7 +1,22 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'img.clerk.com', // Cho phép ảnh từ Clerk
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com', // Cho phép ảnh mẫu (nếu dùng)
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com', // Cho phép ảnh Avatar Google
+      }
+    ]
+  }
 };
 
 export default nextConfig;
