@@ -29,7 +29,7 @@ export default function Page() {
         
         <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/20">
           <p className="italic">
-            Founder review
+            App ChatChoi cho người Chất Chơi
           </p>
           <div className="mt-4 flex items-center gap-3">
             <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-blue-600 font-bold">

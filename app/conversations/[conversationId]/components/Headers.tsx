@@ -5,6 +5,7 @@ import useOtherUser from "@/app/hooks/useOtherUser";
 import { useMemo } from "react";
 import Link from "next/link";
 import { Conversation } from "@prisma/client";
+import Image from "next/image";
 
 interface HeaderProps {
   conversation: Conversation & {
@@ -23,7 +24,7 @@ const Header: React.FC<HeaderProps> = ({ conversation }) => {
   }, [conversation]);
 
   return (
-    <div className="bg-white w-full flex border-b-[1px] sm:px-4 py-3 px-4 lg:px-6 justify-between items-center shadow-sm">
+    <div className="bg-white w-full flex border-b sm:px-4 py-3 px-4 lg:px-6 justify-between items-center shadow-sm">
       <div className="flex gap-3 items-center">
         {/* Nút Back cho Mobile */}
         <Link href="/conversations" className="lg:hidden block text-blue-500 hover:text-blue-600 transition cursor-pointer">
@@ -31,8 +32,13 @@ const Header: React.FC<HeaderProps> = ({ conversation }) => {
         </Link>
 
         {/* Avatar */}
-        <div className="relative inline-block rounded-full overflow-hidden h-10 w-10">
-           <img src={otherUser?.image || '/images/placeholder.jpg'} alt="Avatar" className="object-cover w-full h-full"/>
+        <div className="relative h-9 w-9 md:h-11 md:w-11">
+          <Image
+              fill
+              src={conversation.isGroup ? "/images/group_placeholder.jpg" : otherUser?.image || '/images/placeholder.jpg'} 
+              alt="Avatar" 
+              className="rounded-full object-cover"
+            />
         </div>
 
         {/* Tên & Trạng thái */}
