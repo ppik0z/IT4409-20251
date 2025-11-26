@@ -4,6 +4,7 @@ import useConversation from "@/hooks/useConversation";
 import axios from "axios";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 import { HiPaperAirplane, HiPhoto } from "react-icons/hi2";
+import { CldUploadButton, CloudinaryUploadWidgetResults } from "next-cloudinary";
 
 const Form = () => {
   const { conversationId } = useConversation();
@@ -22,7 +23,7 @@ const Form = () => {
   });
 
   const onSubmit: SubmitHandler<FieldValues> = (data) => {
-    setValue('message', '', { shouldValidate: true }); // Xóa ô nhập sau khi gửi
+    setValue('message', '', { shouldValidate: true });
     
     axios.post('/api/messages', {
       ...data,
@@ -30,10 +31,32 @@ const Form = () => {
     })
   };
 
+
+  const handleUpload = (result: CloudinaryUploadWidgetResults) => {
+
+    const info = result.info;
+
+    if (typeof info === "object" && info !== null && "secure_url" in info) {
+      axios.post('/api/messages', {
+        image: info.secure_url, 
+        fileName: `${info.original_filename}.${info.format}`,
+        conversationId: conversationId
+      })
+    }
+  }
+
   return ( 
-    <div className="py-4 px-4 bg-white border-t flex items-center gap-2 lg:gap-4 w-full">
-      <HiPhoto size={30} className="text-blue-500 cursor-pointer hover:text-blue-600"/>
+    <div className="py-4 px-4 bg-white border-t flex items-center gap-2 lg:gap-4 lg:border-t-gray-100 w-full">
       
+
+      <CldUploadButton 
+        options={{ maxFiles: 1, resourceType: "auto" }}
+        onSuccess={handleUpload} 
+        uploadPreset="chatchoi_preset"
+      >
+        <HiPhoto size={30} className="text-blue-500 cursor-pointer hover:text-blue-600"/>
+      </CldUploadButton>
+
       <form 
         onSubmit={handleSubmit(onSubmit)} 
         className="flex items-center gap-2 lg:gap-4 w-full"
@@ -43,7 +66,7 @@ const Form = () => {
             id="message"
             autoComplete="off"
             {...register("message", { required: true })}
-            placeholder="Nhập tin nhắn..."
+            placeholder="Viết tin nhắn..."
             className="text-black font-light py-2 px-4 bg-neutral-100 w-full rounded-full focus:outline-none"
           />
         </div>

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css"; // Import CSS ở đây
+import "./globals.css"; 
 import { ClerkProvider } from '@clerk/nextjs';
 import { viVN } from "@clerk/localizations";
+import ActiveStatus from "./components/ActiveStatus";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,6 +26,7 @@ export default function RootLayout({
     >
       <html lang="vi">
         <body className={inter.className}>
+          <ActiveStatus />
           {children}
         </body>
       </html>
