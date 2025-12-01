@@ -1,7 +1,7 @@
 "use client";
 
 import { User } from "@prisma/client";
-import useOtherUser from "@/app/hooks/useOtherUser";
+import useOtherUser from "@/hooks/useOtherUser";
 import { useMemo } from "react";
 import Link from "next/link";
 import { Conversation } from "@prisma/client";
@@ -14,7 +14,7 @@ interface HeaderProps {
 };
 
 const Header: React.FC<HeaderProps> = ({ conversation }) => {
-  const otherUser = useOtherUser(conversation); // Tự động tìm người kia
+  const otherUser = useOtherUser(conversation); 
 
   const statusText = useMemo(() => {
     if (conversation.isGroup) {

@@ -1,6 +1,18 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-export default clerkMiddleware();
+// 1. Định nghĩa các route được phép vào tự do (Công khai)
+const isPublicRoute = createRouteMatcher([
+  '/sign-in(.*)', 
+  '/sign-up(.*)',
+  '/api/uploadthing(.*)' // Nếu sau này dùng upload ảnh
+]);
+
+export default clerkMiddleware(async (auth, req) => {
+  // 2. Nếu KHÔNG phải route công khai -> Bắt buộc đăng nhập
+  if (!isPublicRoute(req)) {
+    await auth.protect();
+  }
+});
 
 export const config = {
   matcher: [

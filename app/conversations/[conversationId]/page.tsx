@@ -1,19 +1,21 @@
-// app/conversations/[conversationId]/page.tsx
-
 import getConversationById from "@/app/actions/getConversationById";
-import Header from "./components/Headers";
+import getMessages from "@/app/actions/getMessages"; // <--- Import hàm lấy tin nhắn
+import Header from "./components/Header";
+import Body from "./components/Body";  // <--- Import Body
+import Form from "./components/Form";  // <--- Import Form
 
 interface IParams {
   conversationId: string;
 }
 
-// 1. params bây giờ là Promise
 const ConversationId = async (props: { params: Promise<IParams> }) => {
-  
-  // 2. Phải await nó trước khi dùng
   const params = await props.params; 
   
+  // 1. Lấy thông tin cuộc trò chuyện
   const conversation = await getConversationById(params.conversationId);
+  
+  // 2. Lấy danh sách tin nhắn cũ
+  const messages = await getMessages(params.conversationId);
 
   if (!conversation) {
     return (
@@ -28,15 +30,14 @@ const ConversationId = async (props: { params: Promise<IParams> }) => {
   return ( 
     <div className="lg:pl-80 h-full">
       <div className="h-full flex flex-col">
+        {/* Header: Thông tin người chat cùng */}
         <Header conversation={conversation} />
         
-        <div className="flex-1 overflow-y-auto bg-slate-100 p-4">
-           Body (Tin nhắn)
-        </div>
+        {/* Body: Hiển thị danh sách tin nhắn */}
+        <Body initialMessages={messages} />
 
-        <div className="p-4 border-t bg-white">
-           Form (Nhập liệu)
-        </div>
+        {/* Form: Ô nhập tin nhắn */}
+        <Form />
       </div>
     </div>
   );
