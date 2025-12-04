@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@clerk/localizations": "^3.28.1",
-    "@clerk/nextjs": "^6.35.2",
+    "@clerk/nextjs": "^6.36.5",
     "@headlessui/react": "^2.2.9",
     "@livekit/components-react": "^2.9.16",
     "@livekit/components-styles": "^1.2.0",
