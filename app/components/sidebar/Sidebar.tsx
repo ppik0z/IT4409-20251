@@ -1,8 +1,6 @@
 import DesktopSidebar from "./DesktopSidebar";
-import { currentUser } from "@clerk/nextjs/server";
 
 async function Sidebar({ children }: { children: React.ReactNode }) {
-  const user = await currentUser();
 
   return (
     <div className="h-full">
