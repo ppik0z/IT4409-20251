@@ -21,6 +21,7 @@ const getFileName = (url: string) => {
 const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
   const { user } = useUser();
   const isOwn = user?.id === data.sender.externalId;
+  const isOptimistic = data.id.startsWith("temp_");
 
   // Danh sách những người đã xem (trừ bản thân mình ra)
   const seenList = (data.seen || [])
@@ -41,7 +42,7 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
     isOwn && "items-end"
   );
 
-  // Class cho Bong bóng chat (Xịn xò ở đây này)
+  // Class cho Bong bóng chat
   const message = clsx(
     "text-sm w-fit overflow-hidden shadow-sm", 
     // Nếu là tin của mình -> Gradient xanh + chữ trắng
@@ -52,7 +53,7 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
     (data.image) ? "rounded-md p-0 bg-transparent shadow-none border-none" : ""
   );
 
-  // Logic kiểm tra loại file (như cũ)
+  // Logic kiểm tra loại file 
   const getFileType = (url: string | null) => {
     if (!url) return "text";
     const extension = url.split('.').pop()?.toLowerCase();
@@ -109,7 +110,7 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
                    </video>
                 )}
 
-                {/* File tài liệu (Style lại cho đẹp) */}
+                {/* File tài liệu */}
                 {fileType === "file" && (
                    <a 
                      href={data.image} 
@@ -117,7 +118,7 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
                      rel="noopener noreferrer"
                      className={clsx(
                         "flex items-center gap-3 p-3 rounded-lg transition max-w-xs",
-                        // Nếu là tin mình thì nền trắng chữ đen (vì bong bóng đã xanh)
+                        // Nếu là tin mình thì nền trắng chữ đen 
                         // Nếu là tin bạn thì nền xám nhạt
                         isOwn ? "bg-white/20 text-white hover:bg-white/30" : "bg-gray-100 text-gray-800 hover:bg-gray-200"
                      )}
@@ -144,9 +145,15 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
             </div>
         )}
         {/* Nếu chưa ai xem thì hiện Đã gửi */}
-        {isLast && isOwn && seenList.length === 0 && (
+        {isLast && isOwn && seenList.length === 0 && !isOptimistic && (
             <div className="text-xs font-light text-gray-400 mt-1">
                 Đã gửi
+            </div>
+        )}
+        {/* Nếu là tin nhắn giả */}
+        {isOwn && isOptimistic && (
+            <div className="text-xs font-light text-gray-400 mt-1 italic">
+                Đang gửi...
             </div>
         )}
 

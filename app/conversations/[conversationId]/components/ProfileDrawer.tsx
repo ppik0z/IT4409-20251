@@ -42,13 +42,13 @@ const ProfileDrawer: React.FC<ProfileDrawerProps> = ({ isOpen, onClose, data, us
     return data.name || otherUser.username;
   }, [data.name, otherUser.username]);
 
-  // 3. Trạng thái (Số thành viên hoặc text)
-  const statusText = useMemo(() => {
-    if (data.isGroup) {
-      return `${data.users.length} thành viên`;
-    }
-    return 'Đang hoạt động';
-  }, [data]);
+  // 3. Trạng thái (MỚI - Chuẩn Realtime)
+const statusText = useMemo(() => {
+  if (data.isGroup) {
+    return `${data.users.length} thành viên`;
+  }
+  return isActive ? 'Đang hoạt động' : 'Ngoại tuyến';
+}, [data, isActive]);
 
   // 4. Kiểm tra quyền Admin/Mod
   const isAdmin = useMemo(() => {
@@ -119,9 +119,15 @@ const ProfileDrawer: React.FC<ProfileDrawerProps> = ({ isOpen, onClose, data, us
                               alt="Avatar"
                               className="rounded-full object-cover"
                             />
-                            {!data.isGroup && isActive && (
+                            
+                            {/* Chỉ hiện chấm khi là chat 1-1 */}
+                            {!data.isGroup && (
                               <span 
-                                className="absolute block rounded-full bg-green-500 ring-4 ring-white top-2 right-2 h-4 w-4" 
+                                className={`
+                                  absolute block rounded-full ring-4 ring-white 
+                                  bottom-0 right-0 h-6 w-6 
+                                  ${isActive ? 'bg-green-500' : 'bg-gray-400'}
+                                `}
                               />
                             )}
                           </div>

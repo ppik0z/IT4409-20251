@@ -5,9 +5,11 @@ import axios from "axios";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 import { HiPaperAirplane, HiPhoto } from "react-icons/hi2";
 import { CldUploadButton, CloudinaryUploadWidgetResults } from "next-cloudinary";
+import { useUser } from "@clerk/nextjs";
 
 const Form = () => {
   const { conversationId } = useConversation();
+  const { user } = useUser();
 
   const {
     register,
@@ -25,6 +27,26 @@ const Form = () => {
   const onSubmit: SubmitHandler<FieldValues> = (data) => {
     setValue('message', '', { shouldValidate: true });
     
+    // Optimistic UI: Tạo tin nhắn giả và hiển thị ngay
+    if (user) {
+      const optimisticMessage = {
+        // eslint-disable-next-line react-hooks/purity
+        id: `temp_${Date.now()}`, // ID tạm thời
+        body: data.message,
+        image: null,
+        createdAt: new Date().toISOString(),
+        sender: {
+          id: user.id,
+          externalId: user.id,
+          username: user.fullName || user.username || "Me",
+          email: user.primaryEmailAddress?.emailAddress,
+          image: user.imageUrl
+        },
+        seen: []
+      };
+      window.dispatchEvent(new CustomEvent("message:optimistic", { detail: optimisticMessage }));
+    }
+
     axios.post('/api/messages', {
       ...data,
       conversationId: conversationId
@@ -37,6 +59,26 @@ const Form = () => {
     const info = result.info;
 
     if (typeof info === "object" && info !== null && "secure_url" in info) {
+      // Optimistic UI cho ảnh
+      if (user) {
+        const optimisticMessage = {
+          id: `temp_${Date.now()}`,
+          body: null,
+          image: info.secure_url,
+          fileName: `${info.original_filename}.${info.format}`,
+          createdAt: new Date().toISOString(),
+          sender: {
+            id: user.id,
+            externalId: user.id,
+            username: user.fullName || user.username || "Me",
+            email: user.primaryEmailAddress?.emailAddress,
+            image: user.imageUrl
+          },
+          seen: []
+        };
+        window.dispatchEvent(new CustomEvent("message:optimistic", { detail: optimisticMessage }));
+      }
+
       axios.post('/api/messages', {
         image: info.secure_url, 
         fileName: `${info.original_filename}.${info.format}`,
