@@ -21,7 +21,6 @@ export async function POST(request: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-
     const newMessage = await prisma.message.create({
       data: {
         body: message,
@@ -51,30 +50,57 @@ export async function POST(request: Request) {
         }
       },
       include: {
-        users: true,
+        users: true, 
         messages: {
           include: {
-            seen: true
+            seen: true,
+            sender: true,
           }
         }
       }
     });
 
-
-
-    // trigger
+    // Trigger cho cửa sổ chat
     await pusherServer.trigger(conversationId, 'messages:new', newMessage);
 
+    // Trigger cho Sidebar & Notification
     const lastMessage = updatedConversation.messages[updatedConversation.messages.length - 1];
 
-    updatedConversation.users.map((user) => {
-      pusherServer.trigger(user.email!, 'conversation:update', {
-        id: conversationId,
-        messages: [lastMessage]
-      });
-    });
+    const minimalUsers = updatedConversation.users.map((u) => ({
+      id: u.id,
+      username: u.username,
+      email: u.email,
+      image: u.image
+    }));
 
-    return NextResponse.json(newMessage);
+    // Tạo message rút gọn
+    const minimalMessage = {
+      id: lastMessage.id,
+      body: lastMessage.body,
+      image: lastMessage.image,
+      createdAt: lastMessage.createdAt,
+      senderId: lastMessage.senderId,
+      sender: { 
+         id: lastMessage.sender.id,
+         username: lastMessage.sender.username
+      }
+    };
+
+    // Gửi đi cho từng người nhận
+    await Promise.all(
+      updatedConversation.users.map(async (user) => {
+        if (user.email) {
+          await pusherServer.trigger(user.email, 'conversation:update', {
+            id: conversationId,
+            messages: [minimalMessage],
+            lastMessageAt: updatedConversation.lastMessageAt,
+            name: updatedConversation.name,
+            isGroup: updatedConversation.isGroup,
+            users: minimalUsers,
+          });
+        }
+      })
+    );
 
     return NextResponse.json(newMessage);
 

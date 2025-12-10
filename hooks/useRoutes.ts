@@ -34,19 +34,13 @@ const useRoutes = () => {
       active: pathname === '/profile'
     },
     {
-      label: 'Thông báo',
-      href: '/notifications',
-      icon: HiBell,
-      active: pathname === '/notifications'
-    },
-    {
       label: 'Cài đặt',
       href: '/settings',
       icon: HiCog,
       active: pathname === '/settings'
     },
     {
-      label: 'Khác', // Nút bí ẩn em chưa nghĩ ra
+      label: 'Khác', // chưa nghĩ ra
       href: '#',
       icon: HiSquares2X2, 
       onClick: () => console.log('Tính năng đang phát triển...'),
