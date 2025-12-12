@@ -15,88 +15,79 @@ const Form = () => {
     register,
     handleSubmit,
     setValue,
-    formState: {
-      errors,
-    }
+    formState: { errors }
   } = useForm<FieldValues>({
-    defaultValues: {
-      message: ''
-    }
+    defaultValues: { message: '' }
   });
 
-  const onSubmit: SubmitHandler<FieldValues> = (data) => {
-    setValue('message', '', { shouldValidate: true });
+  // --- HÀM TẠO TIN NHẮN GIẢ ---
+  const createOptimisticMessage = (body: string | null, fileUrl: string | null, fileType: string, fileName?: string) => {
+    if (!user) return;
     
-    // Optimistic UI: Tạo tin nhắn giả và hiển thị ngay
-    if (user) {
-      const optimisticMessage = {
-        // eslint-disable-next-line react-hooks/purity
-        id: `temp_${Date.now()}`, // ID tạm thời
-        body: data.message,
-        image: null,
-        createdAt: new Date().toISOString(),
-        sender: {
-          id: user.id,
-          externalId: user.id,
-          username: user.fullName || user.username || "Me",
-          email: user.primaryEmailAddress?.emailAddress,
-          image: user.imageUrl
-        },
-        seen: []
-      };
-      window.dispatchEvent(new CustomEvent("message:optimistic", { detail: optimisticMessage }));
-    }
-
-    axios.post('/api/messages', {
-      ...data,
-      conversationId: conversationId
-    })
+    const optimisticMessage = {
+      // eslint-disable-next-line react-hooks/purity
+      id: `temp_${Date.now()}`,
+      body: body,
+      fileUrl: fileUrl,  
+      fileType: fileType,
+      fileName: fileName,
+      image: fileType === 'image' ? fileUrl : null, 
+      createdAt: new Date().toISOString(),
+      sender: {
+        id: user.id,
+        externalId: user.id,
+        username: user.fullName || user.username || "Me",
+        email: user.primaryEmailAddress?.emailAddress,
+        image: user.imageUrl
+      },
+      seen: []
+    };
+    window.dispatchEvent(new CustomEvent("message:optimistic", { detail: optimisticMessage }));
   };
 
+  // --- XỬ LÝ GỬI TEXT  ---
+  const onSubmit: SubmitHandler<FieldValues> = (data) => {
+    setValue('message', '', { shouldValidate: true });
+    createOptimisticMessage(data.message, null, 'text');
+    axios.post('/api/messages', {
+      message: data.message,
+      fileType: 'text', 
+      conversationId: conversationId
+    });
+  };
 
+  // --- XỬ LÝ UPLOAD FILE ---
   const handleUpload = (result: CloudinaryUploadWidgetResults) => {
-
     const info = result.info;
-
     if (typeof info === "object" && info !== null && "secure_url" in info) {
-      // Optimistic UI cho ảnh
-      if (user) {
-        const optimisticMessage = {
-          id: `temp_${Date.now()}`,
-          body: null,
-          image: info.secure_url,
-          fileName: `${info.original_filename}.${info.format}`,
-          createdAt: new Date().toISOString(),
-          sender: {
-            id: user.id,
-            externalId: user.id,
-            username: user.fullName || user.username || "Me",
-            email: user.primaryEmailAddress?.emailAddress,
-            image: user.imageUrl
-          },
-          seen: []
-        };
-        window.dispatchEvent(new CustomEvent("message:optimistic", { detail: optimisticMessage }));
+      let fileType = 'file';
+      if (info.resource_type === 'image') fileType = 'image';
+      if (info.resource_type === 'video') fileType = 'video';
+      if (info.format === 'pdf' || info.original_filename?.endsWith('.pdf')) {
+          fileType = 'file';
       }
-
+      const fileName = `${info.original_filename}.${info.format}`;
+      createOptimisticMessage(null, info.secure_url, fileType, fileName);
       axios.post('/api/messages', {
-        image: info.secure_url, 
-        fileName: `${info.original_filename}.${info.format}`,
+        fileUrl: info.secure_url,
+        fileType: fileType, 
+        fileName: fileName,
         conversationId: conversationId
-      })
+      });
     }
   }
 
   return ( 
-    <div className="py-4 px-4 bg-white border-t flex items-center gap-2 lg:gap-4 lg:border-t-gray-100 w-full">
+    <div className="py-3 px-4 bg-white border-t flex items-center gap-2 lg:gap-4 lg:border-t-gray-100 w-full">
       
-
       <CldUploadButton 
         options={{ maxFiles: 1, resourceType: "auto" }}
         onSuccess={handleUpload} 
         uploadPreset="chatchoi_preset"
       >
-        <HiPhoto size={30} className="text-blue-500 cursor-pointer hover:text-blue-600"/>
+        <div className="p-2 rounded-full text-blue-500 hover:bg-sky-100 transition cursor-pointer">
+          <HiPhoto size={24} />
+        </div>
       </CldUploadButton>
 
       <form 
@@ -109,15 +100,15 @@ const Form = () => {
             autoComplete="off"
             {...register("message", { required: true })}
             placeholder="Viết tin nhắn..."
-            className="text-black font-light py-2 px-4 bg-neutral-100 w-full rounded-full focus:outline-none"
+            className="text-black font-light py-2 px-4 bg-gray-100 w-full rounded-full focus:outline-none"
           />
         </div>
         
         <button 
           type="submit" 
-          className="rounded-full p-2 bg-blue-500 cursor-pointer hover:bg-blue-600 transition"
+          className="p-2 rounded-full text-blue-500 hover:bg-sky-100 transition cursor-pointer"
         >
-          <HiPaperAirplane size={18} className="text-white" />
+          <HiPaperAirplane size={24} />
         </button>
       </form>
     </div>

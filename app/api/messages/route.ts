@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   try {
     const { userId } = await auth();
     const body = await request.json();
-    const { message, image, conversationId, fileName } = body;
+    const { message, fileUrl, fileType, conversationId, fileName } = body;
 
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
@@ -21,11 +21,23 @@ export async function POST(request: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    let finalFileType = fileType || 'text';
+
+    // Nếu client cũ gửi 'image' (field cũ) mà không gửi fileType
+    if (body.image && !fileUrl) {
+        finalFileType = 'image';
+    }
+
     const newMessage = await prisma.message.create({
       data: {
         body: message,
-        image: image,
-        fileName: fileName, 
+
+        fileUrl: fileUrl || body.image, 
+        fileType: finalFileType,
+        fileName: fileName,
+
+        image: finalFileType === 'image' ? (fileUrl || body.image) : null,
+
         conversation: { connect: { id: conversationId } },
         sender: { connect: { id: currentUser.id } },
         seen: { connect: { id: currentUser.id } }
@@ -36,7 +48,7 @@ export async function POST(request: Request) {
       }
     });
 
-    // Cập nhật lại conversation 
+    // Cập nhật conversation 
     const updatedConversation = await prisma.conversation.update({
       where: {
         id: conversationId

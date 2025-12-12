@@ -1,165 +1,185 @@
 "use client";
 
+import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { FullMessageType } from "@/types"; // Import type
 import clsx from "clsx";
 import Image from "next/image";
 import { format } from "date-fns";
 import { HiDocumentArrowDown } from "react-icons/hi2";
+import { FullMessageType } from "@/types";
+import { CgSpinner } from "react-icons/cg"; 
+// import ImageModal from "./ImageModal"; 
 
 interface MessageBoxProps {
   data: FullMessageType;
   isLast?: boolean;
 }
 
-// Hàm lấy tên file từ URL
-const getFileName = (url: string) => {
-  const parts = url.split('/');
-  return parts[parts.length - 1];
-}
-
 const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
   const { user } = useUser();
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+
   const isOwn = user?.id === data.sender.externalId;
   const isOptimistic = data.id.startsWith("temp_");
 
-  // Danh sách những người đã xem (trừ bản thân mình ra)
   const seenList = (data.seen || [])
-    .filter((seenUser) => seenUser.email !== data.sender.email)
-    .map((seenUser) => seenUser.username)
+    .filter((seenUser) => seenUser.email !== data.sender.email) 
+    .map((seenUser) => seenUser.username || seenUser.email)
     .join(', ');
 
-  // Class cho Container chính
   const container = clsx(
-    "flex gap-3 p-4", 
+    "flex gap-3 p-4",
     isOwn && "justify-end"
   );
-
   const avatar = clsx(isOwn && "order-2");
+  const body = clsx("flex flex-col gap-2", isOwn && "items-end");
 
-  const body = clsx(
-    "flex flex-col gap-2", 
-    isOwn && "items-end"
-  );
+  // --- LOGIC PHÂN LOẠI FILE 
+  
+  const contentUrl = data.fileUrl || data.image;
+  let contentType = data.fileType;
 
-  // Class cho Bong bóng chat
-  const message = clsx(
-    "text-sm w-fit overflow-hidden shadow-sm", 
-    // Nếu là tin của mình -> Gradient xanh + chữ trắng
-    isOwn ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white" : "bg-white border border-gray-100 text-gray-900", 
-    // Bo góc tròn trịa
-    "rounded-2xl py-2 px-3",
-    // Nếu là ảnh/video thì bỏ padding để full viền
-    (data.image) ? "rounded-md p-0 bg-transparent shadow-none border-none" : ""
-  );
-
-  // Logic kiểm tra loại file 
-  const getFileType = (url: string | null) => {
-    if (!url) return "text";
-    const extension = url.split('.').pop()?.toLowerCase();
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) return "image";
-    if (['mp4', 'webm', 'ogg', 'mov'].includes(extension || '')) return "video";
-    return "file";
+  if (!contentType && contentUrl) {
+      const extension = contentUrl.split('.').pop()?.toLowerCase();
+      
+      if (['mp4', 'webm', 'ogg', 'mov'].includes(extension || '')) {
+          contentType = 'video';
+      } else if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'rar', 'txt'].includes(extension || '')) {
+          contentType = 'file';
+      } else {
+          contentType = 'image';
+      }
   }
-  const fileType = getFileType(data.image);
+  // -------------------------------------------
 
-  return ( 
+  const messageClass = clsx(
+    "text-sm w-fit overflow-hidden shadow-sm",
+    (contentType === 'image' || contentType === 'video') ? "rounded-md p-0 bg-transparent shadow-none border-none" : "rounded-2xl py-2 px-3",
+    !(contentType === 'image' || contentType === 'video') && (
+        isOwn ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white" : "bg-white border border-gray-100 text-gray-900"
+    )
+  );
+
+  const renderMessageContent = () => {
+    if (!contentUrl) return <div>{data.body}</div>;
+
+    switch (contentType) {
+      case 'image':
+        return (
+          <Image
+            onClick={() => setImageModalOpen(true)}
+            alt="Image"
+            height="288"
+            width="288"
+            src={contentUrl}
+            className="object-cover cursor-pointer hover:scale-105 transition translate rounded-md border border-gray-200"
+          />
+        );
+      
+      case 'video':
+        return (
+           <video controls width="288" className="rounded-md bg-black border border-gray-200">
+              <source src={contentUrl} />
+           </video>
+        );
+
+      case 'audio':
+        return (
+          <div className="flex items-center gap-2 min-w-[200px] p-1">
+             <audio controls controlsList="nodownload" className="w-full h-8 accent-white">
+                <source src={contentUrl} />
+                Trình duyệt không hỗ trợ.
+             </audio>
+          </div>
+        );
+
+      case 'file':
+        return (
+          <a 
+            href={contentUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={clsx(
+              "flex items-center gap-3 p-2 rounded-lg transition max-w-xs",
+              isOwn ? "hover:bg-white/20" : "hover:bg-gray-100"
+            )}
+          >
+            <HiDocumentArrowDown size={24} className={isOwn ? "text-white" : "text-gray-500"} />
+            <div className="flex flex-col overflow-hidden">
+              <span className="font-semibold text-sm truncate w-40">
+                {data.fileName || contentUrl.split('/').pop()}
+              </span>
+              <span className="text-[10px] opacity-80 uppercase">
+                {contentUrl.split('.').pop()} - Nhấn tải về
+              </span>
+            </div>
+          </a>
+        );
+
+      case 'text':
+      default:
+        // Trường hợp data cũ: contentType='image' nhưng thực chất URL hỏng hoặc không xác định
+        // Fallback về body text nếu có
+        return <div>{data.body}</div>;
+    }
+  };
+
+  return (
     <div className={container}>
-      {/* Avatar */}
       <div className={avatar}>
         <div className="relative h-8 w-8">
-           <Image 
-             fill 
-             src={data.sender.image || "/images/placeholder.jpg"} 
-             alt="Avatar" 
+           <Image
+             fill
+             src={data.sender.image || "/images/placeholder.jpg"}
+             alt="Avatar"
              className="rounded-full object-cover shadow-sm"
            />
         </div>
       </div>
 
       <div className={body}>
-        {/* Tên người gửi + Thời gian */}
         <div className="flex items-center gap-1">
           <div className="text-sm text-gray-500">
-            {data.sender.username}
+            {data.sender.username || data.sender.email}
           </div>
           <div className="text-[10px] text-gray-400">
             {format(new Date(data.createdAt), 'p')}
           </div>
         </div>
 
-        {/* Nội dung tin nhắn */}
-        <div className={message}>
-           {!data.image ? (
-             // Nội dung text bình thường
-             <div>{data.body}</div>
-           ) : (
-             <>
-                {/* Ảnh */}
-                {fileType === "image" && (
-                   <Image 
-                     alt="Image" height="288" width="288" src={data.image} 
-                     className="object-cover cursor-pointer hover:scale-105 transition translate rounded-md border border-gray-200"
-                   />
-                )}
-                
-                {/* Video */}
-                {fileType === "video" && (
-                   <video controls width="288" className="rounded-md bg-black border border-gray-200">
-                     <source src={data.image} />
-                   </video>
-                )}
+        <div className={messageClass}>
+           {/* <ImageModal 
+             src={contentUrl} 
+             isOpen={imageModalOpen} 
+             onClose={() => setImageModalOpen(false)} 
+           /> */}
 
-                {/* File tài liệu */}
-                {fileType === "file" && (
-                   <a 
-                     href={data.image} 
-                     target="_blank" 
-                     rel="noopener noreferrer"
-                     className={clsx(
-                        "flex items-center gap-3 p-3 rounded-lg transition max-w-xs",
-                        // Nếu là tin mình thì nền trắng chữ đen 
-                        // Nếu là tin bạn thì nền xám nhạt
-                        isOwn ? "bg-white/20 text-white hover:bg-white/30" : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                     )}
-                   >
-                      <HiDocumentArrowDown size={24} />
-                      <div className="flex flex-col overflow-hidden">
-                        <span className="font-semibold text-sm truncate w-40">
-                          {data.fileName || getFileName(data.image!)} 
-                        </span>
-                        <span className="text-[10px] opacity-80 uppercase">
-                          {data.image?.split('.').pop()} - Nhấn tải về
-                        </span>
-                      </div>
-                   </a>
-                )}
-             </>
-           )}
+           <div className="relative">
+              
+              {renderMessageContent()}
+
+              {isOptimistic && (data.fileUrl || data.image) && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md z-10">
+                      <CgSpinner size={30} className="text-white animate-spin" />
+                  </div>
+              )}
+           </div>
         </div>
 
-        {/* Trạng thái Đã xem / Đã gửi */}
         {isLast && isOwn && seenList.length > 0 && (
-            <div className="text-xs font-light text-gray-500 mt-1">
-                {`Đã xem bởi ${seenList}`}
-            </div>
+          <div className="text-xs font-light text-gray-500 mt-1">{`Đã xem bởi ${seenList}`}</div>
         )}
-        {/* Nếu chưa ai xem thì hiện Đã gửi */}
+        
         {isLast && isOwn && seenList.length === 0 && !isOptimistic && (
-            <div className="text-xs font-light text-gray-400 mt-1">
-                Đã gửi
-            </div>
-        )}
-        {/* Nếu là tin nhắn giả */}
-        {isOwn && isOptimistic && (
-            <div className="text-xs font-light text-gray-400 mt-1 italic">
-                Đang gửi...
-            </div>
+           <div className="text-xs font-light text-gray-400 mt-1">Đã gửi</div>
         )}
 
+        {isOwn && isOptimistic && (
+           <div className="text-xs font-light text-gray-400 mt-1 italic">Đang gửi...</div>
+        )}
       </div>
     </div>
   );
 }
- 
+
 export default MessageBox;
