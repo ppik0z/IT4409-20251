@@ -11,11 +11,12 @@ const getMessages = async (conversationId: string) => {
         seen: true,  
       },
       orderBy: {
-        createdAt: 'asc' 
-      }
+        createdAt: 'desc' 
+      },
+      take: 25
     });
 
-    return messages;
+    return messages.reverse();
 
   } catch (error) {
     console.log("[GET_MESSAGES_ERROR]", error);
