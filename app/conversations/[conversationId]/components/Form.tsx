@@ -4,12 +4,13 @@ import useConversation from "@/hooks/useConversation";
 import axios from "axios";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 import { HiPaperAirplane, HiPhoto } from "react-icons/hi2";
-import { CldUploadButton, CloudinaryUploadWidgetResults } from "next-cloudinary";
 import { useUser } from "@clerk/nextjs";
+import { useRef } from "react";
 
 const Form = () => {
   const { conversationId } = useConversation();
   const { user } = useUser();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
@@ -23,13 +24,12 @@ const Form = () => {
   // --- HÀM TẠO TIN NHẮN GIẢ ---
   const createOptimisticMessage = (body: string | null, fileUrl: string | null, fileType: string, fileName?: string) => {
     if (!user) return;
-    
     const optimisticMessage = {
       // eslint-disable-next-line react-hooks/purity
       id: `temp_${Date.now()}`,
       body: body,
       fileUrl: fileUrl,  
-      fileType: fileType,
+      fileType: fileType, 
       fileName: fileName,
       image: fileType === 'image' ? fileUrl : null, 
       createdAt: new Date().toISOString(),
@@ -45,7 +45,6 @@ const Form = () => {
     window.dispatchEvent(new CustomEvent("message:optimistic", { detail: optimisticMessage }));
   };
 
-  // --- XỬ LÝ GỬI TEXT  ---
   const onSubmit: SubmitHandler<FieldValues> = (data) => {
     setValue('message', '', { shouldValidate: true });
     createOptimisticMessage(data.message, null, 'text');
@@ -56,39 +55,73 @@ const Form = () => {
     });
   };
 
-  // --- XỬ LÝ UPLOAD FILE ---
-  const handleUpload = (result: CloudinaryUploadWidgetResults) => {
-    const info = result.info;
-    if (typeof info === "object" && info !== null && "secure_url" in info) {
-      let fileType = 'file';
-      if (info.resource_type === 'image') fileType = 'image';
-      if (info.resource_type === 'video') fileType = 'video';
-      if (info.format === 'pdf' || info.original_filename?.endsWith('.pdf')) {
-          fileType = 'file';
-      }
-      const fileName = `${info.original_filename}.${info.format}`;
-      createOptimisticMessage(null, info.secure_url, fileType, fileName);
-      axios.post('/api/messages', {
-        fileUrl: info.secure_url,
-        fileType: fileType, 
-        fileName: fileName,
-        conversationId: conversationId
+  // --- XỬ LÝ CHỌN FILE ---
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    e.target.value = '';
+
+    const blobUrl = URL.createObjectURL(file);
+    let fileType = 'file';
+    if (file.type.startsWith('image/')) fileType = 'image';
+    if (file.type.startsWith('video/')) fileType = 'video';
+    if (file.name.endsWith('.pdf')) fileType = 'file';
+
+    createOptimisticMessage(null, blobUrl, fileType, file.name);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'chatchoi_preset'); 
+      formData.append('resource_type', 'auto'); 
+
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+      
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+        method: 'POST',
+        body: formData
       });
+      
+      const data = await res.json();
+
+      if (data.secure_url) {
+        await axios.post('/api/messages', {
+          fileUrl: data.secure_url,
+          fileType: fileType, 
+          fileName: file.name,
+          conversationId: conversationId
+        });
+      }
+    } catch (error) {
+      console.error("Upload thất bại:", error);
     }
-  }
+  };
 
   return ( 
     <div className="py-3 px-4 bg-white border-t flex items-center gap-2 lg:gap-4 lg:border-t-gray-100 w-full">
       
-      <CldUploadButton 
-        options={{ maxFiles: 1, resourceType: "auto" }}
-        onSuccess={handleUpload} 
-        uploadPreset="chatchoi_preset"
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileSelect} 
+        className="hidden" 
+      />
+
+      <div 
+        onClick={() => fileInputRef.current?.click()}
+        className="
+          p-2 
+          rounded-full 
+          text-sky-500 
+          hover:bg-sky-100 
+          transition 
+          cursor-pointer
+        "
+        title="Gửi ảnh/video/file"
       >
-        <div className="p-2 rounded-full text-blue-500 hover:bg-sky-100 transition cursor-pointer">
-          <HiPhoto size={24} />
-        </div>
-      </CldUploadButton>
+        <HiPhoto size={28} />
+      </div>
 
       <form 
         onSubmit={handleSubmit(onSubmit)} 
@@ -98,15 +131,22 @@ const Form = () => {
           <input
             id="message"
             autoComplete="off"
-            {...register("message", { required: true })}
+            {...register("message", { required: false })} 
             placeholder="Viết tin nhắn..."
-            className="text-black font-light py-2 px-4 bg-gray-100 w-full rounded-full focus:outline-none"
+            className="text-black font-light py-2 px-4 bg-gray-100 w-full rounded-full focus:outline-none focus:ring-2 focus:ring-sky-100 transition"
           />
         </div>
         
         <button 
           type="submit" 
-          className="p-2 rounded-full text-blue-500 hover:bg-sky-100 transition cursor-pointer"
+          className="
+            p-2 
+            rounded-full 
+            text-sky-500 
+            hover:bg-sky-100 
+            transition 
+            cursor-pointer
+          "
         >
           <HiPaperAirplane size={24} />
         </button>

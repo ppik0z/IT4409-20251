@@ -18,7 +18,7 @@ type FullConversationType = Conversation & {
 interface NotificationDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  items: FullConversationType[]; // Danh sách tin chưa đọc
+  items: FullConversationType[]; 
 }
 
 const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ 
@@ -30,7 +30,7 @@ const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
 
   const handleClick = (conversationId: string) => {
     router.push(`/conversations/${conversationId}`);
-    onClose(); // Đóng drawer sau khi click
+    onClose(); 
   };
 
   return (
@@ -104,7 +104,7 @@ const NotificationItem = ({ data, onClick }: { data: FullConversationType, onCli
             className="flex items-center gap-3 p-3 rounded-lg hover:bg-neutral-100 cursor-pointer bg-blue-50 transition"
         >
             {/* Avatar */}
-            <div className="relative h-12 w-12 flex-shrink-0">
+            <div className="relative h-12 w-12 shrink-0">
                 <Image
                     fill
                     className="rounded-full object-cover"
@@ -124,12 +124,12 @@ const NotificationItem = ({ data, onClick }: { data: FullConversationType, onCli
                     </p>
                 </div>
                 <p className="text-sm text-blue-600 font-medium truncate">
-                   {lastMessage?.body || "Đã gửi một ảnh"}
+                   {lastMessage?.body || "Đã gửi một file"}
                 </p>
             </div>
             
             {/* Chấm xanh chưa đọc */}
-            <div className="h-2.5 w-2.5 bg-blue-600 rounded-full flex-shrink-0" />
+            <div className="h-2.5 w-2.5 bg-blue-600 rounded-full shrink-0" />
         </div>
     )
 }

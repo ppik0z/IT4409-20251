@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import clsx from "clsx";
 import Image from "next/image";
-import { format } from "date-fns";
+import { format, isToday, isYesterday, isThisYear } from "date-fns";
+import { vi } from "date-fns/locale"; 
 import { HiDocumentArrowDown } from "react-icons/hi2";
 import { FullMessageType } from "@/types";
 import { CgSpinner } from "react-icons/cg"; 
@@ -34,8 +35,26 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
   const avatar = clsx(isOwn && "order-2");
   const body = clsx("flex flex-col gap-2", isOwn && "items-end");
 
+  // --- HÀM FORMAT THỜI GIAN ---
+  const formatMessageTime = (dateInput: Date | string) => {
+    const date = new Date(dateInput);
+    
+    if (isToday(date)) {
+      return format(date, 'p', { locale: vi });
+    }
+
+    if (isYesterday(date)) {
+      return `Hôm qua, ${format(date, 'p', { locale: vi })}`;
+    }
+
+    if (isThisYear(date)) {
+      return format(date, 'd MMM, p', { locale: vi });
+    }
+
+    return format(date, 'd MMM, yyyy, p', { locale: vi });
+  };
+
   // --- LOGIC PHÂN LOẠI FILE 
-  
   const contentUrl = data.fileUrl || data.image;
   let contentType = data.fileType;
 
@@ -50,7 +69,6 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
           contentType = 'image';
       }
   }
-  // -------------------------------------------
 
   const messageClass = clsx(
     "text-sm w-fit overflow-hidden shadow-sm",
@@ -75,14 +93,12 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
             className="object-cover cursor-pointer hover:scale-105 transition translate rounded-md border border-gray-200"
           />
         );
-      
       case 'video':
         return (
            <video controls width="288" className="rounded-md bg-black border border-gray-200">
               <source src={contentUrl} />
            </video>
         );
-
       case 'audio':
         return (
           <div className="flex items-center gap-2 min-w-[200px] p-1">
@@ -92,7 +108,6 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
              </audio>
           </div>
         );
-
       case 'file':
         return (
           <a 
@@ -115,11 +130,8 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
             </div>
           </a>
         );
-
       case 'text':
       default:
-        // Trường hợp data cũ: contentType='image' nhưng thực chất URL hỏng hoặc không xác định
-        // Fallback về body text nếu có
         return <div>{data.body}</div>;
     }
   };
@@ -142,22 +154,17 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
           <div className="text-sm text-gray-500">
             {data.sender.username || data.sender.email}
           </div>
+          
           <div className="text-[10px] text-gray-400">
-            {format(new Date(data.createdAt), 'p')}
+            {formatMessageTime(new Date(data.createdAt))}
           </div>
+
         </div>
 
         <div className={messageClass}>
-           {/* <ImageModal 
-             src={contentUrl} 
-             isOpen={imageModalOpen} 
-             onClose={() => setImageModalOpen(false)} 
-           /> */}
-
+           {/* ImageModal component placeholder */}
            <div className="relative">
-              
               {renderMessageContent()}
-
               {isOptimistic && (data.fileUrl || data.image) && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md z-10">
                       <CgSpinner size={30} className="text-white animate-spin" />

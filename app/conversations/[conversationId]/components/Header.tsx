@@ -57,15 +57,26 @@ const Header: React.FC<HeaderProps> = ({ conversation, users }) => {
         onClose={() => setDrawerOpen(false)}
       />
 
-      <div className="bg-white w-full flex border-b-blue-200 sm:px-4 py-3 px-4 lg:px-6 justify-between items-center shadow-sm">
+      <div className="bg-white w-full flex border-b-blue-200 sm:px-4 py-3 px-4 lg:px-6 justify-between items-center shadow-sm z-40">
         
         <div className="flex gap-3 items-center">
           
           <Link 
             href="/conversations" 
-            className="lg:hidden block text-blue-500 hover:text-blue-600 transition cursor-pointer"
+            className="
+              lg:hidden 
+              block 
+              text-sky-500 
+              hover:text-sky-600 
+              transition 
+              cursor-pointer 
+              p-2 
+              -ml-2 
+              rounded-full 
+              hover:bg-sky-100
+            "
           >
-            <HiChevronLeft size={32} />
+            <HiChevronLeft size={28} />
           </Link>
 
           {conversation.isGroup ? (
@@ -82,7 +93,7 @@ const Header: React.FC<HeaderProps> = ({ conversation, users }) => {
           )}
 
           <div className="flex flex-col">
-            <div className="font-bold">
+            <div className="font-bold text-gray-900 truncate max-w-[200px] sm:max-w-md">
               {conversation.name || otherUser?.username}
             </div>
             <div className="text-sm font-light text-neutral-500">
@@ -91,22 +102,35 @@ const Header: React.FC<HeaderProps> = ({ conversation, users }) => {
           </div>
         </div>
         
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-1 items-center">
 
 
-            <HiPhone
-               onClick={() => {
-                setIsCallOpen(true)
-               }}
-               size={28} 
-               className="text-blue-500 cursor-pointer hover:text-blue-600 transition"
-            />
+          <div className="
+            p-2 
+            rounded-full 
+            text-sky-500 
+            hover:bg-sky-100 
+            hover:text-sky-600 
+            cursor-pointer 
+            transition
+          ">
+            <HiPhone size={24} />
+          </div>
         
-            <HiEllipsisHorizontal
-              size={32}
-              onClick={() => setDrawerOpen(true)}
-              className="text-blue-500 cursor-pointer hover:text-blue-600 transition"
-            />
+          <div 
+            onClick={() => setDrawerOpen(true)}
+            className="
+              p-2 
+              rounded-full 
+              text-sky-500 
+              hover:bg-sky-100 
+              hover:text-sky-600 
+              cursor-pointer 
+              transition
+            "
+          >
+            <HiEllipsisHorizontal size={24} />
+          </div>
 
         </div>
       </div>
