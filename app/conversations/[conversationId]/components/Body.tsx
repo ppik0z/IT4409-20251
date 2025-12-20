@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "axios";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react"; // Thêm useCallback
 import { pusherClient } from "@/lib/pusher";
 import { useUser } from "@clerk/nextjs";
 
@@ -17,14 +17,16 @@ interface BodyProps {
 const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
   const [messages, setMessages] = useState(initialMessages);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  
   const { conversationId } = useConversation();
   const { user } = useUser();
 
-// --- LOGIC LOAD MORE ---
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true); 
 
-  const loadMoreMessages = async () => {
+  // --- LOGIC TẢI THÊM ---
+  const loadMoreMessages = useCallback(async () => {
     if (isLoadingMore || !hasMore || messages.length === 0) return;
 
     setIsLoadingMore(true);
@@ -44,28 +46,44 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
     } finally {
       setIsLoadingMore(false);
     }
-  };
-// -----------------------
+  }, [conversationId, hasMore, isLoadingMore, messages]);
+
+  // ---  BẮT SỰ KIỆN SCROLL ---
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          loadMoreMessages();
+        }
+      },
+      { threshold: 1.0 } 
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [loadMoreMessages, hasMore, isLoadingMore]);
 
 
+  // --- REALTIME & OPTIMISTIC ---
   useEffect(() => {
     axios.post(`/api/conversations/${conversationId}/seen`);
   }, [conversationId]);
 
-  // Lắng nghe sự kiện Optimistic từ Form
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const optimisticHandler = (e: any) => {
       const message = e.detail;
       setMessages((current) => [...current, message]);
-      bottomRef?.current?.scrollIntoView();
+      bottomRef?.current?.scrollIntoView({ behavior: "smooth" });
     };
 
     window.addEventListener("message:optimistic", optimisticHandler);
     return () => window.removeEventListener("message:optimistic", optimisticHandler);
   }, []);
 
-  // REALTIME 
   useEffect(() => {
     pusherClient.subscribe(conversationId);
     bottomRef?.current?.scrollIntoView();
@@ -74,9 +92,7 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
       axios.post(`/api/conversations/${conversationId}/seen`);
 
       setMessages((current) => {
-        if (current.find((m) => m.id === message.id)) {
-          return current;
-        }
+        if (current.find((m) => m.id === message.id)) return current;
 
         if (user && message.sender.email === user.primaryEmailAddress?.emailAddress) {
           const optimisticIndex = current.findIndex((m) => 
@@ -88,11 +104,10 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
             return newMessages;
           }
         }
-
         return [...current, message];
       });
       
-      bottomRef?.current?.scrollIntoView();
+      bottomRef?.current?.scrollIntoView({ behavior: "smooth" });
     };
 
     pusherClient.bind('messages:new', messageHandler);
@@ -102,23 +117,15 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
       pusherClient.unbind('messages:new', messageHandler);
     }
   }, [conversationId, user]);
-  // ------------------------------------
 
   return ( 
     <div className="flex-1 overflow-y-auto bg-slate-100">
+      
+      <div ref={loadMoreRef} className="h-1" />
 
       {hasMore && (
         <div className="flex justify-center p-4">
-            {isLoadingMore ? (
-                <CgSpinner className="animate-spin h-6 w-6 text-gray-500"/>
-            ) : (
-                <button 
-                    onClick={loadMoreMessages}
-                    className="text-xs text-gray-500 hover:text-sky-500 transition cursor-pointer underline"
-                >
-                    Tải tin nhắn cũ hơn
-                </button>
-            )}
+          <CgSpinner className={`animate-spin h-6 w-6 text-gray-500 ${isLoadingMore ? 'opacity-100' : 'opacity-0'}`}/>
         </div>
       )}
 
@@ -129,9 +136,9 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
           data={message} 
         />
       ))}
-      <div ref={bottomRef} className="pt-24" />
+      <div ref={bottomRef} className="h-0" />
     </div>
   );
 }
- 
+
 export default Body;

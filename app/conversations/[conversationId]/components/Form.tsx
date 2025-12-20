@@ -99,8 +99,18 @@ const Form = () => {
   };
 
   return ( 
-    <div className="py-3 px-4 bg-white border-t flex items-center gap-2 lg:gap-4 lg:border-t-gray-100 w-full">
-      
+    <div className="
+      py-3 
+      px-4 
+      bg-white 
+      border-t 
+      border-gray-100 /* Đổi sang màu xám siêu nhạt */
+      flex 
+      items-center 
+      gap-2 
+      lg:gap-4 
+      w-full
+    ">  
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -133,7 +143,21 @@ const Form = () => {
             autoComplete="off"
             {...register("message", { required: false })} 
             placeholder="Viết tin nhắn..."
-            className="text-black font-light py-2 px-4 bg-gray-100 w-full rounded-full focus:outline-none focus:ring-2 focus:ring-sky-100 transition"
+            className="
+              text-black 
+              font-light 
+              py-2 
+              px-4 
+              bg-gray-100 
+              w-full 
+              rounded-full 
+              transition
+              border-none
+              outline-none
+              focus:ring-2
+              focus:ring-sky-200
+              focus:bg-gray-200/50
+            "
           />
         </div>
         

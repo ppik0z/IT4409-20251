@@ -5,3 +5,30 @@ body,
 :root {
   height: 100%;
 }
+
+
+
+
+::-webkit-scrollbar {
+  width: 6px; 
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; 
+}
+
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1; 
+  border-radius: 10px;
+}
+
+
+::-webkit-scrollbar-thumb:hover {
+  background: #0ea5e9; 
+}
+
+
+.flex-1.overflow-y-auto {
+    scrollbar-gutter: stable;
+}
