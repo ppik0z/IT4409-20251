@@ -18,18 +18,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider
-      localization={viVN}
-      appearance={{
-        variables: { colorPrimary: "#2563eb" }
-      }}
-    >
+    
       <html lang="vi">
-        <body className={inter.className}>
-          <ActiveStatus />
-          {children}
-        </body>
+        <ClerkProvider
+          localization={viVN}
+          appearance={{
+            variables: { colorPrimary: "#2563eb" }
+          }}
+        >
+          <body className={inter.className}>
+            <ActiveStatus />
+            {children}
+          </body>
+        </ClerkProvider>
       </html>
-    </ClerkProvider>
+    
   );
 }
