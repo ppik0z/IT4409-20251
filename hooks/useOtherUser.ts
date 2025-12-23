@@ -1,7 +1,7 @@
 import { useUser } from "@clerk/nextjs";
 import { useMemo } from "react";
 import { User } from "@prisma/client";
-import { FullConversationType } from "../../types";
+import { FullConversationType } from "@/types";
 
 const useOtherUser = (conversation: FullConversationType | { users: User[] }) => {
   const { user } = useUser();
