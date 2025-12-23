@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   try {
     const { userId } = await auth();
     const body = await request.json();
-    const { message, image, conversationId } = body;
+    const { message, image, conversationId, fileName } = body;
 
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
@@ -26,15 +26,10 @@ export async function POST(request: Request) {
       data: {
         body: message,
         image: image,
-        conversation: {
-          connect: { id: conversationId }
-        },
-        sender: {
-          connect: { id: currentUser.id }
-        },
-        seen: {
-          connect: { id: currentUser.id } // Người gửi auto seen
-        }
+        fileName: fileName, 
+        conversation: { connect: { id: conversationId } },
+        sender: { connect: { id: currentUser.id } },
+        seen: { connect: { id: currentUser.id } }
       },
       include: {
         seen: true,
@@ -42,7 +37,7 @@ export async function POST(request: Request) {
       }
     });
 
-    // Cập nhật lại conversation (sau dùng)
+    // Cập nhật lại conversation 
     const updatedConversation = await prisma.conversation.update({
       where: {
         id: conversationId
@@ -65,8 +60,21 @@ export async function POST(request: Request) {
       }
     });
 
+
+
     // trigger
     await pusherServer.trigger(conversationId, 'messages:new', newMessage);
+
+    const lastMessage = updatedConversation.messages[updatedConversation.messages.length - 1];
+
+    updatedConversation.users.map((user) => {
+      pusherServer.trigger(user.email!, 'conversation:update', {
+        id: conversationId,
+        messages: [lastMessage]
+      });
+    });
+
+    return NextResponse.json(newMessage);
 
     return NextResponse.json(newMessage);
 

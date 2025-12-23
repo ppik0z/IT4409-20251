@@ -1,8 +1,9 @@
 import getConversationById from "@/app/actions/getConversationById";
-import getMessages from "@/app/actions/getMessages"; // <--- Import hàm lấy tin nhắn
+import getMessages from "@/app/actions/getMessages"; 
 import Header from "./components/Header";
-import Body from "./components/Body";  // <--- Import Body
-import Form from "./components/Form";  // <--- Import Form
+import Body from "./components/Body";  
+import Form from "./components/Form";  
+import getUsers from "@/app/actions/getUsers";
 
 interface IParams {
   conversationId: string;
@@ -10,6 +11,7 @@ interface IParams {
 
 const ConversationId = async (props: { params: Promise<IParams> }) => {
   const params = await props.params; 
+  const users = await getUsers();
   
   // 1. Lấy thông tin cuộc trò chuyện
   const conversation = await getConversationById(params.conversationId);
@@ -31,7 +33,7 @@ const ConversationId = async (props: { params: Promise<IParams> }) => {
     <div className="lg:pl-80 h-full">
       <div className="h-full flex flex-col">
         {/* Header: Thông tin người chat cùng */}
-        <Header conversation={conversation} />
+        <Header conversation={conversation} users={users} />
         
         {/* Body: Hiển thị danh sách tin nhắn */}
         <Body initialMessages={messages} />

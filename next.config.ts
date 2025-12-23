@@ -14,6 +14,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com', // Cho phép ảnh Avatar Google
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com', // Cho phép ảnh từ Cloudinary
       }
     ]
   }

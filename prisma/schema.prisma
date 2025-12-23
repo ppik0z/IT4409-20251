@@ -33,7 +33,11 @@ model Conversation {
   lastMessageAt DateTime @default(now()) 
   name          String? 
   isGroup       Boolean? 
-  
+
+  adminIds      String[] @db.ObjectId
+  moderatorIds  String[] @db.ObjectId
+
+
   messagesIds   String[] @db.ObjectId
   messages      Message[]
 
@@ -47,6 +51,7 @@ model Message {
   
   image         String?  
   
+  fileName      String?
   fileUrl       String?  
   fileType      String?  
 
