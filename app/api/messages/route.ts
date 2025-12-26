@@ -78,7 +78,8 @@ export async function POST(request: Request) {
     // Trigger cho Sidebar & Notification
     const lastMessage = updatedConversation.messages[updatedConversation.messages.length - 1];
 
-    const minimalUsers = updatedConversation.users.map((u) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const minimalUsers = updatedConversation.users.map((u: { id: any; username: any; email: any; image: any; }) => ({
       id: u.id,
       username: u.username,
       email: u.email,
@@ -100,7 +101,7 @@ export async function POST(request: Request) {
 
     // Gửi đi cho từng người nhận
     await Promise.all(
-      updatedConversation.users.map(async (user) => {
+      updatedConversation.users.map(async (user: { email: string | string[]; }) => {
         if (user.email) {
           await pusherServer.trigger(user.email, 'conversation:update', {
             id: conversationId,
