@@ -9,7 +9,7 @@ import Image from "next/image";
 
 import { FullConversationType } from "@/types";
 import useOtherUser from "@/hooks/useOtherUser";
-import Avatar from "@/app/components/Avatar"; // <--- 1. Import vũ khí bí mật
+import Avatar from "@/app/components/Avatar"; 
 
 interface ConversationBoxProps {
   data: FullConversationType,
