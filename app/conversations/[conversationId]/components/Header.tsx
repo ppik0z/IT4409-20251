@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Conversation } from "@prisma/client";
 import Image from "next/image"; 
 import ActiveCallModal from "@/app/components/ActiveCallModal";
-import { HiPhone, HiVideoCamera } from "react-icons/hi2";
+import { HiPhone } from "react-icons/hi2";
 import { HiChevronLeft, HiEllipsisHorizontal } from "react-icons/hi2"; 
 
 import Avatar from "@/app/components/Avatar"; 
@@ -89,7 +89,7 @@ const Header: React.FC<HeaderProps> = ({ conversation, users }) => {
                 />
              </div>
           ) : (
-             <Avatar user={otherUser} />
+              <Avatar user={otherUser} isActive={isActive} />
           )}
 
           <div className="flex flex-col">

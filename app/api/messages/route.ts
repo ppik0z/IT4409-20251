@@ -79,8 +79,9 @@ export async function POST(request: Request) {
     const lastMessage = updatedConversation.messages[updatedConversation.messages.length - 1];
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const minimalUsers = updatedConversation.users.map((u: { id: any; username: any; email: any; image: any; }) => ({
+    const minimalUsers = updatedConversation.users.map((u: { id: any; username: any; email: any; image: any; externalId: any; }) => ({
       id: u.id,
+      externalId: String(u.externalId),
       username: u.username,
       email: u.email,
       image: u.image

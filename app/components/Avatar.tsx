@@ -2,16 +2,17 @@
 
 import { User } from "@prisma/client";
 import Image from "next/image";
-import useActiveList from "@/hooks/useActiveList"; // Import store
+import useActiveList from "@/hooks/useActiveList";
 
 interface AvatarProps {
   user?: User;
+  isActive?: boolean;
 }
 
-const Avatar: React.FC<AvatarProps> = ({ user }) => {
+const Avatar: React.FC<AvatarProps> = ({ user, isActive }) => {
   const { members } = useActiveList();
   
-  const isActive = members.indexOf(user?.externalId || '') !== -1;
+  const active = isActive ?? members.indexOf(user?.externalId || '') !== -1;
 
   return ( 
     <div className="relative">
@@ -37,7 +38,7 @@ const Avatar: React.FC<AvatarProps> = ({ user }) => {
           w-2 
           md:h-3 
           md:w-3
-          ${isActive ? 'bg-green-500' : 'bg-gray-400'} 
+          ${active ? 'bg-green-500' : 'bg-gray-400'} 
         `} 
       />
     </div>

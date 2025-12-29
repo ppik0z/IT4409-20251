@@ -10,6 +10,7 @@ import Image from "next/image";
 import { FullConversationType } from "@/types";
 import useOtherUser from "@/hooks/useOtherUser";
 import Avatar from "@/app/components/Avatar"; 
+import useActiveList from "@/hooks/useActiveList";
 
 interface ConversationBoxProps {
   data: FullConversationType,
@@ -20,6 +21,8 @@ const ConversationBox: React.FC<ConversationBoxProps> = ({ data, selected }) => 
   const otherUser = useOtherUser(data);
   const { user } = useUser();
   const router = useRouter();
+  const { members } = useActiveList();
+  const isActive = members.indexOf(otherUser?.externalId || '') !== -1;
 
   const handleClick = useCallback(() => {
     router.push(`/conversations/${data.id}`);
@@ -55,9 +58,8 @@ const ConversationBox: React.FC<ConversationBoxProps> = ({ data, selected }) => 
         selected ? 'bg-neutral-100' : 'bg-white'
       )}
     >
-      {/* 3. Logic hiển thị Avatar xịn */}
       {data.isGroup ? (
-         // Nếu là Group: Dùng ảnh tĩnh (chưa cần check online cả nhóm)
+         // Nếu là Group: Dùng ảnh tĩnh 
          <div className="relative h-9 w-9 md:h-11 md:w-11">
             <Image 
                fill
@@ -67,7 +69,7 @@ const ConversationBox: React.FC<ConversationBoxProps> = ({ data, selected }) => 
             />
          </div>
       ) : (
-         <Avatar user={otherUser} />
+         <Avatar user={otherUser} isActive={isActive} />
       )}
 
       <div className="min-w-0 flex-1">
