@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "axios";
-import { useEffect, useRef, useState, useCallback } from "react"; // Thêm useCallback
+import { useEffect, useRef, useState, useCallback } from "react";
 import { pusherClient } from "@/lib/pusher";
 import { useUser } from "@clerk/nextjs";
 
@@ -25,7 +25,14 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true); 
 
-  // --- LOGIC TẢI THÊM ---
+  // ---  LOGIC CUỘN TRANG TỰ ĐỘNG ---
+  useEffect(() => {
+    if (messages.length > 0) {
+      bottomRef?.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages.length]);
+
+  // ---  LOGIC TẢI THÊM TIN NHẮN (INFINITY SCROLL) ---
   const loadMoreMessages = useCallback(async () => {
     if (isLoadingMore || !hasMore || messages.length === 0) return;
 
@@ -48,7 +55,6 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
     }
   }, [conversationId, hasMore, isLoadingMore, messages]);
 
-  // ---  BẮT SỰ KIỆN SCROLL ---
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -67,25 +73,25 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
   }, [loadMoreMessages, hasMore, isLoadingMore]);
 
 
-  // --- REALTIME & OPTIMISTIC ---
+  // ---  XỬ LÝ SEEN & OPTIMISTIC EVENT ---
   useEffect(() => {
     axios.post(`/api/conversations/${conversationId}/seen`);
   }, [conversationId]);
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const optimisticHandler = (e: any) => {
+    const optimisticHandler = (e: CustomEvent<FullMessageType>) => {
       const message = e.detail;
       setMessages((current) => [...current, message]);
-      bottomRef?.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    window.addEventListener("message:optimistic", optimisticHandler);
-    return () => window.removeEventListener("message:optimistic", optimisticHandler);
+    window.addEventListener("message:optimistic", optimisticHandler as EventListener);
+    return () => window.removeEventListener("message:optimistic", optimisticHandler as EventListener);
   }, []);
 
+  // ---  REALTIME PUSHER ---
   useEffect(() => {
     pusherClient.subscribe(conversationId);
+    
     bottomRef?.current?.scrollIntoView();
 
     const messageHandler = (message: FullMessageType) => {
@@ -98,6 +104,7 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
           const optimisticIndex = current.findIndex((m) => 
             m.id.startsWith("temp_") && (m.body === message.body || m.image === message.image)
           );
+          
           if (optimisticIndex !== -1) {
             const newMessages = [...current];
             newMessages[optimisticIndex] = message;
@@ -106,8 +113,6 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
         }
         return [...current, message];
       });
-      
-      bottomRef?.current?.scrollIntoView({ behavior: "smooth" });
     };
 
     pusherClient.bind('messages:new', messageHandler);
@@ -120,7 +125,7 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
 
   return ( 
     <div className="flex-1 overflow-y-auto bg-slate-100">
-      
+      {/* Ref để trigger load more */}
       <div ref={loadMoreRef} className="h-1" />
 
       {hasMore && (
@@ -136,7 +141,9 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
           data={message} 
         />
       ))}
-      <div ref={bottomRef} className="h-0" />
+      
+      {/* Ref để cuộn xuống cuối */}
+      <div ref={bottomRef} className="pt-2" />
     </div>
   );
 }
