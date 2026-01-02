@@ -9,17 +9,25 @@ import { vi } from "date-fns/locale";
 import { HiDocumentArrowDown } from "react-icons/hi2";
 import { FullMessageType } from "@/types";
 import { CgSpinner } from "react-icons/cg"; 
+import useSearchModal from "@/hooks/useSearchModal"; 
 // import ImageModal from "./ImageModal"; 
 
 interface MessageBoxProps {
   data: FullMessageType;
-  isLast?: boolean;
+  isLast?: boolean;  
+  isFocused?: boolean;
 }
 
-const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
+const MessageBox: React.FC<MessageBoxProps> = ({ 
+  data, 
+  isLast,
+  isFocused 
+}) => {
   const { user } = useUser();
+  const searchModal = useSearchModal(); 
   const [imageModalOpen, setImageModalOpen] = useState(false);
 
+  // Logic check chủ sở hữu dùng Clerk User ID
   const isOwn = user?.id === data.sender.externalId;
   const isOptimistic = data.id.startsWith("temp_");
 
@@ -28,39 +36,59 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
     .map((seenUser) => seenUser.username || seenUser.email)
     .join(', ');
 
+  // STYLE CHO FOCUS VÀ MATCH
   const container = clsx(
     "flex gap-3 p-4",
-    isOwn && "justify-end"
+    isOwn && "justify-end",
+    isFocused && "bg-yellow-100 transition-colors duration-500 ease-in-out"
   );
+
+  // --- HÀM TÔ MÀU TỪ KHÓA  ---
+  const highlightText = (text: string | null) => {
+    if (!text) return null;
+    
+    // Nếu không có từ khóa hoặc thanh tìm kiếm đóng -> Trả về text gốc
+    if (!searchModal.searchTerm || !searchModal.isOpen) {
+      return text;
+    }
+
+    // Tạo Regex: 'gi' là global (tìm hết) và case-insensitive (không pb hoa thường)
+    // Dùng ngoặc đơn (...) để giữ lại từ khóa trong mảng kết quả split
+    const parts = text.split(new RegExp(`(${searchModal.searchTerm})`, 'gi'));
+
+    return (
+      <span>
+        {parts.map((part, i) => 
+          part.toLowerCase() === searchModal.searchTerm.toLowerCase() ? (
+            <span key={i} className="bg-yellow-300 text-black font-bold px-0.5 rounded-sm">
+              {part}
+            </span>
+          ) : (
+            part
+          )
+        )}
+      </span>
+    );
+  };
+  
   const avatar = clsx(isOwn && "order-2");
   const body = clsx("flex flex-col gap-2", isOwn && "items-end");
 
   // --- HÀM FORMAT THỜI GIAN ---
   const formatMessageTime = (dateInput: Date | string) => {
     const date = new Date(dateInput);
-    
-    if (isToday(date)) {
-      return format(date, 'p', { locale: vi });
-    }
-
-    if (isYesterday(date)) {
-      return `Hôm qua, ${format(date, 'p', { locale: vi })}`;
-    }
-
-    if (isThisYear(date)) {
-      return format(date, 'd MMM, p', { locale: vi });
-    }
-
+    if (isToday(date)) return format(date, 'p', { locale: vi });
+    if (isYesterday(date)) return `Hôm qua, ${format(date, 'p', { locale: vi })}`;
+    if (isThisYear(date)) return format(date, 'd MMM, p', { locale: vi });
     return format(date, 'd MMM, yyyy, p', { locale: vi });
   };
 
-  // --- LOGIC PHÂN LOẠI FILE 
+  // --- LOGIC PHÂN LOẠI FILE ---
   const contentUrl = data.fileUrl || data.image;
   let contentType = data.fileType;
 
   if (!contentType && contentUrl) {
       const extension = contentUrl.split('.').pop()?.toLowerCase();
-      
       if (['mp4', 'webm', 'ogg', 'mov'].includes(extension || '')) {
           contentType = 'video';
       } else if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'rar', 'txt'].includes(extension || '')) {
@@ -79,7 +107,7 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
   );
 
   const renderMessageContent = () => {
-    if (!contentUrl) return <div>{data.body}</div>;
+    if (!contentUrl) return <div>{highlightText(data.body)}</div>;
 
     switch (contentType) {
       case 'image':
@@ -137,7 +165,7 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
   };
 
   return (
-    <div className={container}>
+    <div id={`message-${data.id}`} className={container}>
       <div className={avatar}>
         <div className="relative h-8 w-8">
            <Image
@@ -154,15 +182,12 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
           <div className="text-sm text-gray-500">
             {data.sender.username || data.sender.email}
           </div>
-          
           <div className="text-[10px] text-gray-400">
             {formatMessageTime(new Date(data.createdAt))}
           </div>
-
         </div>
 
         <div className={messageClass}>
-           {/* ImageModal component placeholder */}
            <div className="relative">
               {renderMessageContent()}
               {isOptimistic && (data.fileUrl || data.image) && (

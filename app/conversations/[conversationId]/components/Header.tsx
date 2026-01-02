@@ -9,10 +9,11 @@ import Image from "next/image";
 import ActiveCallModal from "@/app/components/ActiveCallModal";
 import { HiPhone } from "react-icons/hi2";
 import { HiChevronLeft, HiEllipsisHorizontal } from "react-icons/hi2"; 
-
+import { HiMagnifyingGlass } from "react-icons/hi2";
 import Avatar from "@/app/components/Avatar"; 
 import ProfileDrawer from "./ProfileDrawer"; 
 import useActiveList from "@/hooks/useActiveList"; 
+import useSearchModal from "@/hooks/useSearchModal";
 
 interface HeaderProps {
   conversation: Conversation & {users: User[]};
@@ -23,7 +24,7 @@ const Header: React.FC<HeaderProps> = ({ conversation, users }) => {
   const otherUser = useOtherUser(conversation);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isCallOpen, setIsCallOpen] = useState(false); 
-  
+  const searchModal = useSearchModal();
 
   const { members } = useActiveList();
   
@@ -104,8 +105,19 @@ const Header: React.FC<HeaderProps> = ({ conversation, users }) => {
         
         <div className="flex gap-1 items-center">
 
+          <div 
+            onClick={() => searchModal.isOpen ? searchModal.onClose() : searchModal.onOpen()}
+            className="
+              p-2 rounded-full text-sky-500 hover:bg-sky-100 
+              hover:text-sky-600 cursor-pointer transition
+            "
+          >
+            <HiMagnifyingGlass size={24} />
+          </div>
 
-          <div className="
+          <div 
+            onClick={() => setIsCallOpen(true)}
+            className="
             p-2 
             rounded-full 
             text-sky-500 
