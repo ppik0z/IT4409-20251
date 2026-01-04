@@ -31,13 +31,10 @@ export async function POST(request: Request) {
     const newMessage = await prisma.message.create({
       data: {
         body: message,
-
         fileUrl: fileUrl || body.image, 
         fileType: finalFileType,
         fileName: fileName,
-
         image: finalFileType === 'image' ? (fileUrl || body.image) : null,
-
         conversation: { connect: { id: conversationId } },
         sender: { connect: { id: currentUser.id } },
         seen: { connect: { id: currentUser.id } }
@@ -63,20 +60,32 @@ export async function POST(request: Request) {
       },
       include: {
         users: true, 
-        messages: {
-          include: {
-            seen: true,
-            sender: true,
-          }
-        }
       }
     });
 
+    const pusherPayload = {
+        id: newMessage.id,
+        body: newMessage.body,
+        image: newMessage.image,
+        fileUrl: newMessage.fileUrl,
+        fileType: newMessage.fileType,
+        fileName: newMessage.fileName,
+        createdAt: newMessage.createdAt,
+        senderId: newMessage.senderId,
+        sender: {
+            id: newMessage.sender.id,
+            username: newMessage.sender.username,
+            image: newMessage.sender.image,
+            email: newMessage.sender.email,
+        },
+        seen: newMessage.seen
+    };
+
     // Trigger cho cửa sổ chat
-    await pusherServer.trigger(conversationId, 'messages:new', newMessage);
+    await pusherServer.trigger(conversationId, 'messages:new', pusherPayload);
 
     // Trigger cho Sidebar & Notification
-    const lastMessage = updatedConversation.messages[updatedConversation.messages.length - 1];
+    const lastMessage = newMessage;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const minimalUsers = updatedConversation.users.map((u: { id: any; username: any; email: any; image: any; externalId: any; }) => ({
@@ -84,21 +93,8 @@ export async function POST(request: Request) {
       externalId: String(u.externalId),
       username: u.username,
       email: u.email,
-      image: u.image
+      image: u.image,
     }));
-
-    // Tạo message rút gọn
-    const minimalMessage = {
-      id: lastMessage.id,
-      body: lastMessage.body,
-      image: lastMessage.image,
-      createdAt: lastMessage.createdAt,
-      senderId: lastMessage.senderId,
-      sender: { 
-         id: lastMessage.sender.id,
-         username: lastMessage.sender.username
-      }
-    };
 
     // Gửi đi cho từng người nhận
     await Promise.all(
@@ -106,7 +102,7 @@ export async function POST(request: Request) {
         if (user.email) {
           await pusherServer.trigger(user.email, 'conversation:update', {
             id: conversationId,
-            messages: [minimalMessage],
+            messages: [lastMessage],
             lastMessageAt: updatedConversation.lastMessageAt,
             name: updatedConversation.name,
             isGroup: updatedConversation.isGroup,

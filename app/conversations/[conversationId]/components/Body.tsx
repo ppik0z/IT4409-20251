@@ -4,7 +4,7 @@ import axios from "axios";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { pusherClient } from "@/lib/pusher";
 import { useUser } from "@clerk/nextjs";
-
+import { useLayoutEffect } from "react";
 import { FullMessageType } from "@/types";
 import useConversation from "@/hooks/useConversation";
 import MessageBox from "./MessageBox";
@@ -12,6 +12,7 @@ import { HiChevronDown, HiChevronUp, HiMagnifyingGlass } from "react-icons/hi2";
 import useSearchModal from "@/hooks/useSearchModal";
 import { HiXMark } from "react-icons/hi2";
 import { CgSpinner } from "react-icons/cg";
+import { debounce } from "lodash";
 
 interface BodyProps {
   initialMessages: FullMessageType[];
@@ -19,63 +20,114 @@ interface BodyProps {
 
 const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
   const [messages, setMessages] = useState(initialMessages);
+
   const bottomRef = useRef<HTMLDivElement>(null);
-  const loadMoreRef = useRef<HTMLDivElement>(null); 
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const prevScrollHeightRef = useRef<number>(0); 
+
   const { conversationId } = useConversation();
   const { user } = useUser();
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
+  
+
 
   const searchModal = useSearchModal();
 
   // ---  LOGIC TÌM KIẾM & ĐIỀU HƯỚNG ---
+  const [serverMatchIds, setServerMatchIds] = useState<string[]>([]);
+  const [isSearchingServer, setIsSearchingServer] = useState(false);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
 
-  // Tìm tất cả ID của tin nhắn khớp từ khóa
-  const matchIds = useMemo(() => {
-    if (!searchModal.searchTerm) return [];
-    return messages
-          .filter((msg) => msg.body?.toLowerCase().includes(searchModal.searchTerm.toLowerCase()))
-          .map((msg) => msg.id)
-          .reverse(); 
-  }, [messages, searchModal.searchTerm]);
+  // Debounce
+  const searchMessages = useCallback(
+    debounce(async (term: string) => {
+      if (!term) {
+        setServerMatchIds([]);
+        return;
+      }
+      setIsSearchingServer(true);
+      try {
+        const res = await axios.get(`/api/conversations/${conversationId}/search?query=${term}`);
+        setServerMatchIds(res.data); 
+        setCurrentMatchIndex(0); 
+      } catch (error) {
+        console.error("Lỗi tìm kiếm", error);
+      } finally {
+        setIsSearchingServer(false);
+      }
+    }, 500), 
+    [conversationId]
+  );
 
-  // Reset index khi từ khóa thay đổi
   useEffect(() => {
-    setCurrentMatchIndex(0);
-  }, [searchModal.searchTerm]);
+    if (searchModal.searchTerm) {
+      searchMessages(searchModal.searchTerm);
+    } else {
+      setServerMatchIds([]);
+    }
+  }, [searchModal.searchTerm, searchMessages]);
 
-  // Hàm cuộn tới tin nhắn đang focus
-  const scrollToMatch = (index: number) => {
-    const id = matchIds[index];
-    if (id) {
-      const el = document.getElementById(`message-${id}`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+// ---  LOGIC NHẢY ĐẾN TIN NHẮN ---
+  const jumpToMessage = async (targetId: string) => {
+    //  Kiểm tra xem tin nhắn đã có trong list hiện tại chưa
+    const existingMessage = messages.find(m => m.id === targetId);
+
+    if (existingMessage) {
+      // Có rồi thì cuộn tới
+      const el = document.getElementById(`message-${targetId}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      // Chưa có -> Phải tải thêm từ Server
+      setIsLoadingMore(true);
+      try {
+        const oldestCurrentId = messages[0].id;
+        const res = await axios.get(`/api/conversations/${conversationId}/messages?cursor=${oldestCurrentId}&limit=20`); 
+        const newMessages = res.data;
+        
+        if (newMessages.length > 0) {
+            setMessages((prev) => [...newMessages, ...prev]);
+
+            setTimeout(() => {
+                const el = document.getElementById(`message-${targetId}`);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                else {
+                    console.log("Vẫn chưa load tới tin nhắn đó, cần bấm nút lần nữa hoặc load thêm");
+                }
+            }, 500);
+        }
+      } catch (error) {
+        console.log("Lỗi jump to message", error);
+      } finally {
+        setIsLoadingMore(false);
       }
     }
   };
 
-  // Tự động cuộn tới kết quả đầu tiên khi vừa tìm thấy
+  // --- 3. ĐIỀU HƯỚNG ---
+  // Tự động nhảy tới kết quả đầu tiên khi có danh sách search
   useEffect(() => {
-    if (searchModal.isOpen && matchIds.length > 0) {
-      scrollToMatch(currentMatchIndex);
+    if (searchModal.isOpen && serverMatchIds.length > 0) {
+       // Chỉ nhảy nếu chưa focus (optional)
+       jumpToMessage(serverMatchIds[currentMatchIndex]);
     }
-  }, [matchIds.length, searchModal.isOpen, currentMatchIndex]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverMatchIds]); // Chỉ chạy khi danh sách ID thay đổi (mới search xong)
 
-  // Nút xuống (Tin mới hơn)
-  const handleNext = () => {
-    let newIndex = currentMatchIndex - 1;
-    if (newIndex < 0) newIndex = matchIds.length - 1; 
+  const handleNavigateNewer = () => {
+    let newIndex = currentMatchIndex - 1; // Vì mảng server là Mới -> Cũ
+    if (newIndex < 0) newIndex = serverMatchIds.length - 1;
     setCurrentMatchIndex(newIndex);
+    jumpToMessage(serverMatchIds[newIndex]);
   };
 
-  // Nút lên (Tin cũ hơn)
-  const handlePrev = () => {
-    let newIndex = currentMatchIndex + 1;
-    if (newIndex >= matchIds.length) newIndex = 0; 
+  const handleNavigateOlder = () => {
+    let newIndex = currentMatchIndex + 1; // Cũ hơn là index tăng lên
+    if (newIndex >= serverMatchIds.length) newIndex = 0;
     setCurrentMatchIndex(newIndex);
+    jumpToMessage(serverMatchIds[newIndex]);
   };
 
   // ---  LOGIC CUỘN TIN NHẮN ---
@@ -88,11 +140,15 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
     if (messages.length > 0 && !searchModal.isOpen) {
       bottomRef?.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [lastMessageId, searchModal.isOpen]);
+  }, [lastMessageId]);
 
   // ---  LOGIC TẢI THÊM TIN NHẮN (INFINITY SCROLL) ---
   const loadMoreMessages = useCallback(async () => {
     if (isLoadingMore || !hasMore || messages.length === 0) return;
+
+    if (containerRef.current) {
+      prevScrollHeightRef.current = containerRef.current.scrollHeight;
+    }
 
     setIsLoadingMore(true);
     const oldestMessageId = messages[0].id;
@@ -129,6 +185,21 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
 
     return () => observer.disconnect();
   }, [loadMoreMessages, hasMore, isLoadingMore]);
+
+  // ---  LOGIC GIỮ VỊ TRÍ CUỘN KHI TẢI TIN CŨ (SCROLL RESTORATION) ---
+  useLayoutEffect(() => {
+    if (containerRef.current && prevScrollHeightRef.current > 0) {
+      const container = containerRef.current;
+      const newScrollHeight = container.scrollHeight;
+      const heightDifference = newScrollHeight - prevScrollHeightRef.current;
+
+      // Nếu chiều cao tăng lên  -> Đẩy thanh cuộn xuống
+      if (heightDifference > 0) {
+        container.scrollTop = heightDifference;
+        prevScrollHeightRef.current = 0;
+      }
+    }
+  }, [messages]); 
 
 
   // ---  XỬ LÝ SEEN & OPTIMISTIC EVENT ---
@@ -201,47 +272,45 @@ return (
             />
           </div>
 
-          {/* CỤM NÚT ĐIỀU HƯỚNG */}
-          {searchModal.searchTerm && matchIds.length > 0 && (
+          {/* CỤM NÚT ĐIỀU HƯỚNG (Sửa lại dùng serverMatchIds) */}
+          {searchModal.searchTerm && serverMatchIds.length > 0 && (
              <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 py-1">
                 <span className="text-xs text-gray-500 font-medium min-w-[30px] text-center">
-                   {currentMatchIndex + 1} / {matchIds.length}
+                   {/* Hiển thị: Vị trí hiện tại / Tổng số từ Server */}
+                   {currentMatchIndex + 1} / {serverMatchIds.length}
                 </span>
-                <button onClick={handlePrev} className="p-1 hover:bg-gray-200 rounded text-gray-600">
+                
+                <button onClick={handleNavigateOlder} className="...">
                    <HiChevronUp size={18} />
                 </button>
-                <button onClick={handleNext} className="p-1 hover:bg-gray-200 rounded text-gray-600">
+
+                <button onClick={handleNavigateNewer} className="...">
                    <HiChevronDown size={18} />
                 </button>
              </div>
           )}
-
-          <button onClick={searchModal.onClose} className="p-2 hover:bg-gray-100 rounded-full transition text-gray-500">
-            <HiXMark size={20} />
-          </button>
+          
+          {/* Thêm Loading Indicator cho Search */}
+          {isSearchingServer && (
+              <CgSpinner className="animate-spin text-sky-500 ml-2" />
+          )}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      {/* MESSAGES CONTAINER */}
+      <div ref={containerRef} className="flex-1 overflow-y-auto">
         <div ref={loadMoreRef} className="h-1" />
-        {hasMore && (
-           <div className="flex justify-center p-4">
-              <CgSpinner className={`animate-spin h-6 w-6 text-gray-500 ${isLoadingMore ? 'opacity-100' : 'opacity-0'}`}/>
-           </div>
-        )}
-
+        
         {messages.map((message, i) => {
-           const isMatch = matchIds.includes(message.id);
-           const isFocused = matchIds[currentMatchIndex] === message.id;
-
-           return (
-             <MessageBox 
-               isLast={i === messages.length - 1} 
-               key={message.id} 
-               data={message}   
-               isFocused={isFocused}
-             />
-           )
+          const isFocused = serverMatchIds[currentMatchIndex] === message.id;
+          return (
+            <MessageBox 
+              isLast={i === messages.length - 1} 
+              key={message.id} 
+              data={message}   
+              isFocused={isFocused}
+            />
+          );
         })}
         
         <div ref={bottomRef} className="pt-2" />

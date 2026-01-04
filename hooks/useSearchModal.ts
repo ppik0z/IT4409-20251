@@ -11,7 +11,7 @@ interface SearchModalStore {
 const useSearchModal = create<SearchModalStore>((set) => ({
   isOpen: false,
   onOpen: () => set({ isOpen: true }),
-  onClose: () => set({ isOpen: false, searchTerm: "" }), // Đóng thì xóa luôn từ khóa cho sạch
+  onClose: () => set({ isOpen: false, searchTerm: "" }),
   searchTerm: "",
   setSearchTerm: (term: string) => set({ searchTerm: term }),
 }));
