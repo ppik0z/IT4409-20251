@@ -6,6 +6,7 @@ import { UserButton } from "@clerk/nextjs";
 import { User } from "@prisma/client";
 import NotificationButton from "@/app/components/notifications/NotificationButton"; 
 import { FullConversationType } from "@/types";
+import { useState, useEffect } from "react";
 
 interface DesktopSidebarProps {
   currentUser: User | null;
@@ -16,6 +17,16 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   unreadConversations = []
 }) => {
   const routes = useRoutes();
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
 
   return ( 
     <>
