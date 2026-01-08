@@ -84,8 +84,17 @@ export async function POST(request: Request) {
     // Trigger cho cửa sổ chat
     await pusherServer.trigger(conversationId, 'messages:new', pusherPayload);
 
-    // Trigger cho Sidebar & Notification
-    const lastMessage = newMessage;
+    // Trigger cho mỗi user trong conversation (cập nhật conversation list)
+    const lastMessage = {
+        id: newMessage.id,
+        body: newMessage.body || (newMessage.image ? "Sent an image" : "Sent a file"),
+        createdAt: newMessage.createdAt,
+        senderId: newMessage.senderId,
+        sender: {
+            username: newMessage.sender.username,
+            image: newMessage.sender.image,
+        }
+    };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const minimalUsers = updatedConversation.users.map((u: { id: any; username: any; email: any; image: any; externalId: any; }) => ({
