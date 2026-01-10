@@ -107,6 +107,12 @@ const ConversationList: React.FC<ConversationListProps> = ({ initialItems, users
   }, [pusherKey, conversationId, router]);
 
   return (
+  <> 
+    <GroupChatModal 
+        users={users} 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+      />
     <aside className={clsx(`
         fixed 
         inset-y-0 
@@ -125,6 +131,12 @@ const ConversationList: React.FC<ConversationListProps> = ({ initialItems, users
         <div className="flex justify-between mb-4 pt-4">
           <div className="text-2xl font-bold text-neutral-800">
             Tin nhắn
+          </div>
+          <div 
+            onClick={() => setIsModalOpen(true)}
+            className="rounded-full p-2 bg-gray-100 text-gray-600 cursor-pointer hover:opacity-75 transition"
+          >
+              +
           </div>
         </div>
         <div className="relative mb-4">
@@ -169,6 +181,7 @@ const ConversationList: React.FC<ConversationListProps> = ({ initialItems, users
         )}
       </div>
     </aside>
+  </>
   );
 };
 
