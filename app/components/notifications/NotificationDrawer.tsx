@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useMemo } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { IoClose } from "react-icons/io5";
 import { format } from "date-fns";
@@ -97,6 +97,19 @@ const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
 const NotificationItem = ({ data, onClick }: { data: FullConversationType, onClick: () => void }) => {
     const otherUser = useOtherUser(data);
     const lastMessage = data.messages[0];
+
+    const messageContent = useMemo(() => {
+        if (lastMessage?.image) return "Đã gửi một hình ảnh";
+        if (lastMessage?.body) return lastMessage.body;
+        return "Đã gửi một file";
+    }, [lastMessage]);
+
+    const previewText = useMemo(() => {
+        if (data.isGroup && lastMessage?.sender?.username) {
+            return `${lastMessage.sender.username}: ${messageContent}`;
+        }
+        return messageContent;
+    }, [data.isGroup, lastMessage, messageContent]);
     
     return (
         <div 
@@ -123,8 +136,10 @@ const NotificationItem = ({ data, onClick }: { data: FullConversationType, onCli
                         {lastMessage?.createdAt && format(new Date(lastMessage.createdAt), 'p')}
                     </p>
                 </div>
+                
+                {/* previewText */}
                 <p className="text-sm text-blue-600 font-medium truncate">
-                   {lastMessage?.body || "Đã gửi một file"}
+                    {previewText}
                 </p>
             </div>
             
