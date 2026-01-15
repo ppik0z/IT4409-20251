@@ -1,5 +1,5 @@
 import getUsers from "@/app/actions/getUsers";
-import UserBox from "./components/UserBox";
+import UserSearch from "./components/UserSearch"; // Import component mới
 
 export const dynamic = "force-dynamic";
 
@@ -13,12 +13,7 @@ const Users = async () => {
           Mọi người
         </h2>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-           {users.map((user) => (
-             <UserBox key={user.id} data={user} />
-           ))}
-        </div>
-
+        <UserSearch items={users} />
       </div>
     </div>
   );

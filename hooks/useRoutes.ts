@@ -27,25 +27,25 @@ const useRoutes = () => {
       icon: HiUsers,
       active: pathname === '/users'
     },
-    {
-      label: 'Hồ sơ', // Trang Profile (Cover, Bio, Posts...)
-      href: '/profile', 
-      icon: HiUser,
-      active: pathname === '/profile'
-    },
-    {
-      label: 'Cài đặt',
-      href: '/settings',
-      icon: HiCog,
-      active: pathname === '/settings'
-    },
-    {
-      label: 'Khác', // chưa nghĩ ra
-      href: '#',
-      icon: HiSquares2X2, 
-      onClick: () => console.log('Tính năng đang phát triển...'),
-      active: false,
-    },
+    // {
+    //   label: 'Hồ sơ', // Trang Profile (Cover, Bio, Posts...)
+    //   href: '/profile', 
+    //   icon: HiUser,
+    //   active: pathname === '/profile'
+    // },
+    // {
+    //   label: 'Cài đặt',
+    //   href: '/settings',
+    //   icon: HiCog,
+    //   active: pathname === '/settings'
+    // },
+    // {
+    //   label: 'Khác', // chưa nghĩ ra
+    //   href: '#',
+    //   icon: HiSquares2X2, 
+    //   onClick: () => console.log('Tính năng đang phát triển...'),
+    //   active: false,
+    // },
   ], [pathname, conversationId]);
 
   return routes;
