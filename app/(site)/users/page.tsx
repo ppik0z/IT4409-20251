@@ -1,6 +1,8 @@
 import getUsers from "@/app/actions/getUsers";
 import UserBox from "./components/UserBox";
 
+export const dynamic = "force-dynamic";
+
 const Users = async () => {
   const users = await getUsers();
 
