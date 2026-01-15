@@ -12,7 +12,7 @@ import { HiChevronDown, HiChevronUp, HiMagnifyingGlass } from "react-icons/hi2";
 import useSearchModal from "@/hooks/useSearchModal";
 import { HiXMark } from "react-icons/hi2";
 import { CgSpinner } from "react-icons/cg";
-import { debounce } from "lodash";
+import debounce from "lodash/debounce";
 
 interface BodyProps {
   initialMessages: FullMessageType[];
