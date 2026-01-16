@@ -42,7 +42,7 @@ const NotificationButton: React.FC<NotificationButtonProps> = ({ initialItems = 
                     return current;
                 }
 
-                const lastMessage = conversation.messages[0];
+                const lastMessage = conversation.messages?.[0];
                 if (!lastMessage) return current;
 
                 // Nếu mình gửi -> Xóa khỏi list

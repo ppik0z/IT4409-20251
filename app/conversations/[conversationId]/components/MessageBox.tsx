@@ -28,7 +28,7 @@ const MessageBox: React.FC<MessageBoxProps> = ({
   const [imageModalOpen, setImageModalOpen] = useState(false);
 
   // Logic check chủ sở hữu dùng Clerk User ID
-  const isOwn = user?.id === data.sender.externalId;
+  const isOwn = user?.primaryEmailAddress?.emailAddress === data.sender.email;
   const isOptimistic = data.id.startsWith("temp_");
 
   const seenList = (data.seen || [])
