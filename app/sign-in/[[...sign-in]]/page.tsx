@@ -21,9 +21,9 @@ export default function Page() {
       {/* Phải: Review*/}
       <div className="hidden md:flex flex-col justify-between bg-linear-to-br from-blue-600 to-indigo-900 p-12 text-white">
         <div>
-          <h1 className="text-4xl font-bold mb-4">ChatChoi👌</h1>
+          <h1 className="text-4xl font-bold mb-4">ChatChoi</h1>
           <p className="text-lg text-blue-100">
-            Slogan chất chơi
+            ...
           </p>
         </div>
         
