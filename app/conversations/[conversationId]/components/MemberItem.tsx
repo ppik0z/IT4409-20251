@@ -107,7 +107,7 @@ const MemberItem: React.FC<MemberItemProps> = ({
                         'flex w-full px-4 py-2 text-sm text-gray-700'
                       )}
                     >
-                      <HiShieldCheck className="mr-2 h-5 w-5 text-blue-500" /> Đột phá làm tiên
+                      <HiShieldCheck className="mr-2 h-5 w-5 text-blue-500" /> Thăng chức
                     </button>
                   )}
                 </Menu.Item>
@@ -124,7 +124,7 @@ const MemberItem: React.FC<MemberItemProps> = ({
                         'flex w-full px-4 py-2 text-sm text-gray-700'
                       )}
                     >
-                      <HiChevronDoubleDown className="mr-2 h-5 w-5" /> Tẩu hỏa nhập ma
+                      <HiChevronDoubleDown className="mr-2 h-5 w-5" /> Giáng chức
                     </button>
                   )}
                 </Menu.Item>
